@@ -12,10 +12,14 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
-    "isolatedModules": true,
+    "isolatedModules": true,"baseUrl": ".",
+    "paths": {
+    "@/*": ["src/*"]
+}
     "noEmit": true,
     "jsx": "react-jsx",
     "types": ["vite/client"]
+    
   },
   "include": ["src"]
 }
