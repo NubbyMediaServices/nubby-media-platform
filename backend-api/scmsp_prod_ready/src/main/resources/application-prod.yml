@@ -1,0 +1,46 @@
+server:
+  port: 8080
+  forward-headers-strategy: framework
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET}
+    expiration-ms: ${APP_JWT_EXPIRATION_MS:86400000}
+  security:
+    allow-registration: ${APP_ALLOW_REGISTRATION:false}
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:https://app.example.com}
+  storage:
+    root-location: ${APP_STORAGE_ROOT:/var/lib/scmsp/storage}
+
+logging:
+  level:
+    root: INFO
+    com.nubbymedia.scmsp: INFO

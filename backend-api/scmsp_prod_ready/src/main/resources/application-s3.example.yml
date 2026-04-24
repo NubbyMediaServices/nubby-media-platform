@@ -1,0 +1,14 @@
+app:
+  storage:
+    provider: s3
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+    region: ${AWS_REGION}
+    endpoint: ${AWS_S3_ENDPOINT:}
+    path-style: ${AWS_S3_PATH_STYLE:false}
+
+spring:
+  datasource:
+    url: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:secure_media_storage}?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+    username: ${MYSQL_USER:scmsp_user}
+    password: ${MYSQL_PASSWORD:scmsp_pass}

@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  color: #F5F5F7;
+  font-family: Inter, system-ui, sans-serif;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(57,255,20,.10), transparent 25%),
+    radial-gradient(circle at 88% 12%, rgba(198,169,106,.10), transparent 27%),
+    radial-gradient(circle at 50% 100%, rgba(57,255,20,.055), transparent 35%),
+    #050505;
+}
+
+::selection { background: rgba(57,255,20,.30); color: white; }
+
+.container { @apply mx-auto max-w-7xl px-5 sm:px-8; }
+.kicker { @apply text-xs font-bold uppercase tracking-[0.28em] text-neon; }
+.h1 { @apply font-display text-5xl font-semibold leading-[1.03] sm:text-6xl lg:text-7xl; }
+.h2 { @apply font-display text-4xl font-semibold leading-tight sm:text-5xl; }
+.copy { @apply text-base leading-8 text-muted; }
+.card { @apply rounded-[28px] border border-white/10 bg-white/[0.035] shadow-soft backdrop-blur; }
+.btn-primary { @apply inline-flex items-center justify-center rounded-2xl bg-neon px-5 py-3 text-sm font-bold text-black shadow-glow transition hover:-translate-y-0.5 hover:bg-[#2de510]; }
+.btn-secondary { @apply inline-flex items-center justify-center rounded-2xl border border-gold/70 px-5 py-3 text-sm font-bold text-gold transition hover:-translate-y-0.5 hover:bg-gold/10; }
+.input { @apply rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3 text-cream outline-none transition placeholder:text-muted focus:border-neon focus:ring-4 focus:ring-neon/10; }
+
+.photo-tile {
+  background:
+    radial-gradient(circle at 40% 22%, rgba(57,255,20,.16), transparent 22%),
+    linear-gradient(135deg, rgba(255,255,255,.06), rgba(255,255,255,.015)),
+    linear-gradient(135deg, #15151a, #050505);
+}
