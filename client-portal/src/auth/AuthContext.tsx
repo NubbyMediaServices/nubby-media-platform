@@ -5,7 +5,10 @@ import { tokenStorage } from "@/lib/storage";
 type User = {
   id?: number;
   userId?: number;
-  email: string;
+  username?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
   fullName?: string;
   roles?: string[];
 };
@@ -48,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const currentUser = await getCurrentUser();
-        setUser(currentUser);
+        setUser(currentUser as User);
       } catch {
         tokenStorage.clear();
         setUser(null);
@@ -61,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function login(input: LoginInput) {
-    const response = await loginApi(input);
+    const response: any = await loginApi(input);
 
     if (response.token) {
       tokenStorage.set(response.token);
@@ -69,11 +72,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const currentUser = await getCurrentUser();
-      setUser(currentUser);
+      setUser(currentUser as User);
     } catch {
       setUser({
         userId: response.userId,
+        username: response.username,
         email: response.email,
+        firstName: response.firstName,
+        lastName: response.lastName,
         fullName: response.fullName,
         roles: response.roles,
       });
@@ -81,7 +87,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function register(input: RegisterInput) {
-    // Register only. Do not auto-login and do not call /users/me here.
     await registerApi(input);
   }
 
@@ -91,15 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        login,
-        register,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
