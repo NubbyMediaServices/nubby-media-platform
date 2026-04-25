@@ -1,124 +1,116 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
-import { getCurrentUser, login as loginRequest, register as registerRequest } from "@/api/auth";
+import { createContext, useContext, useEffect, useState } from "react";
+import { getCurrentUser, login as loginApi, register as registerApi } from "@/api/auth";
 import { tokenStorage } from "@/lib/storage";
-import type { CurrentUser } from "@/types/api";
 
-type AuthContextValue = {
-  user: CurrentUser | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  isBootstrapping: boolean;
-  login: (input: { usernameOrEmail: string; password: string }) => Promise<void>;
-  register: (input: {
-    username: string;
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-  }) => Promise<void>;
-  logout: () => void;
-  refreshUser: () => Promise<void>;
+type User = {
+  id?: number;
+  userId?: number;
+  email: string;
+  fullName?: string;
+  roles?: string[];
 };
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+type LoginInput = {
+  usernameOrEmail: string;
+  password: string;
+};
 
-function getTokenFromResponse(data: Record<string, unknown>) {
-  return (
-    (typeof data.token === "string" && data.token) ||
-    (typeof data.jwt === "string" && data.jwt) ||
-    (typeof data.accessToken === "string" && data.accessToken) ||
-    ""
-  );
-}
+type RegisterInput = {
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  password: string;
+};
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<CurrentUser | null>(null);
-  const [token, setToken] = useState<string | null>(tokenStorage.get());
-  const [isBootstrapping, setIsBootstrapping] = useState(true);
+type AuthContextValue = {
+  user: User | null;
+  isLoading: boolean;
+  login: (input: LoginInput) => Promise<void>;
+  register: (input: RegisterInput) => Promise<void>;
+  logout: () => void;
+};
 
-  async function refreshUser() {
-    const nextUser = await getCurrentUser();
-    setUser(nextUser);
-  }
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function bootstrap() {
-      const existingToken = tokenStorage.get();
-      if (!existingToken) {
-        setIsBootstrapping(false);
+    async function loadUser() {
+      const token = tokenStorage.get();
+
+      if (!token) {
+        setIsLoading(false);
         return;
       }
 
       try {
-        await refreshUser();
+        const currentUser = await getCurrentUser();
+        setUser(currentUser);
       } catch {
         tokenStorage.clear();
-        setToken(null);
         setUser(null);
       } finally {
-        setIsBootstrapping(false);
+        setIsLoading(false);
       }
     }
 
-    void bootstrap();
+    loadUser();
   }, []);
 
-  async function login(input: { usernameOrEmail: string; password: string }) {
-    const data = await loginRequest(input);
-    const nextToken = getTokenFromResponse(data as Record<string, unknown>);
-    if (!nextToken) {
-      throw new Error("No token returned from login.");
+  async function login(input: LoginInput) {
+    const response = await loginApi(input);
+
+    if (response.token) {
+      tokenStorage.set(response.token);
     }
 
-    tokenStorage.set(nextToken);
-    setToken(nextToken);
-    await refreshUser();
+    try {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+    } catch {
+      setUser({
+        userId: response.userId,
+        email: response.email,
+        fullName: response.fullName,
+        roles: response.roles,
+      });
+    }
   }
 
-  async function register(input: {
-    username: string;
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-  }) {
-    const data = await registerRequest(input);
-    const nextToken = getTokenFromResponse(data as Record<string, unknown>);
-    if (nextToken) {
-      tokenStorage.set(nextToken);
-      setToken(nextToken);
-      await refreshUser();
-    }
+  async function register(input: RegisterInput) {
+    // Register only. Do not auto-login and do not call /users/me here.
+    await registerApi(input);
   }
 
   function logout() {
     tokenStorage.clear();
-    setToken(null);
     setUser(null);
   }
 
-  const value = useMemo<AuthContextValue>(
-    () => ({
-      user,
-      token,
-      isAuthenticated: Boolean(token),
-      isBootstrapping,
-      login,
-      register,
-      logout,
-      refreshUser
-    }),
-    [user, token, isBootstrapping]
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        login,
+        register,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
   );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const value = useContext(AuthContext);
-  if (!value) {
-    throw new Error("useAuth must be used inside AuthProvider.");
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth must be used within AuthProvider");
   }
-  return value;
+
+  return context;
 }
