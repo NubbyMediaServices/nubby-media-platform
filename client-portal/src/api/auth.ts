@@ -21,7 +21,7 @@ export async function login(input: LoginInput): Promise<AuthResponse> {
     password: input.password
   };
 
-  const { data } = await api.post("/auth/login", payload);
+  const { data } = await api.post("/auth/login", payload)
   return data;
 }
 
