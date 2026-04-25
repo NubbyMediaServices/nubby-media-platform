@@ -1,31 +1,38 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/auth/AuthContext";
 
-type RegisterForm = {
-  firstName: string;
-  lastName: string;
-  username: string;
-  email: string;
-  password: string;
-};
-
 export function RegisterPage() {
-  const { register, handleSubmit } = useForm<RegisterForm>();
   const { register: registerAccount } = useAuth();
   const navigate = useNavigate();
+
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    username: "",
+    email: "",
+    password: ""
+  });
+
   const [error, setError] = useState("");
 
-  async function onSubmit(values: RegisterForm) {
+  function updateField(field: string, value: string) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    console.log("REGISTER BUTTON CLICKED", form);
+
     try {
       setError("");
-      await registerAccount(values);
+      await registerAccount(form);
       navigate("/");
-    } catch {
-      setError("Registration failed. Confirm registration is enabled in the backend.");
+    } catch (err) {
+      console.error("REGISTER FAILED", err);
+      setError("Registration failed. Check backend response or logs.");
     }
   }
 
@@ -36,26 +43,30 @@ export function RegisterPage() {
         <h1 className="mt-2 text-3xl font-semibold text-slate-900">Create account</h1>
         <p className="mt-2 text-sm text-slate-500">Provision a new console user for the current environment.</p>
 
-        <form className="mt-8 grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit(onSubmit)}>
+        <form className="mt-8 grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">First name</label>
-            <Input {...register("firstName", { required: true })} />
+            <Input value={form.firstName} onChange={(e) => updateField("firstName", e.target.value)} />
           </div>
+
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">Last name</label>
-            <Input {...register("lastName", { required: true })} />
+            <Input value={form.lastName} onChange={(e) => updateField("lastName", e.target.value)} />
           </div>
+
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">Username</label>
-            <Input {...register("username", { required: true })} />
+            <Input value={form.username} onChange={(e) => updateField("username", e.target.value)} />
           </div>
+
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">Email</label>
-            <Input {...register("email", { required: true })} type="email" />
+            <Input type="email" value={form.email} onChange={(e) => updateField("email", e.target.value)} />
           </div>
+
           <div className="sm:col-span-2">
             <label className="mb-2 block text-sm font-medium text-slate-700">Password</label>
-            <Input {...register("password", { required: true })} type="password" />
+            <Input type="password" value={form.password} onChange={(e) => updateField("password", e.target.value)} />
           </div>
 
           {error ? <p className="sm:col-span-2 text-sm text-rose-600">{error}</p> : null}
