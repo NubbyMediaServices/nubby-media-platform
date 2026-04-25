@@ -27,13 +27,13 @@ export function RegisterPage() {
     console.log("REGISTER BUTTON CLICKED", form);
 
     try {
-      setError("");
-      await registerAccount(form);
-      navigate("/");
-    } catch (err) {
-      console.error("REGISTER FAILED", err);
-      setError("Registration failed. Check backend response or logs.");
-    }
+  setError("");
+  await registerAccount(form);
+  navigate("/login"); // ✅ FIX
+} catch (err) {
+  console.error("REGISTER FAILED", err);
+  setError("Registration failed. Check backend response or logs.");
+}
   }
 
   return (
