@@ -29,6 +29,8 @@ type RegisterInput = {
 type AuthContextValue = {
   user: User | null;
   isLoading: boolean;
+  isBootstrapping: boolean;
+  isAuthenticated: boolean;
   login: (input: LoginInput) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
   logout: () => void;
@@ -87,6 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function register(input: RegisterInput) {
+    // Register only — no auto login
     await registerApi(input);
   }
 
@@ -96,7 +99,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        isBootstrapping: isLoading,
+        isAuthenticated: Boolean(user),
+        login,
+        register,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
