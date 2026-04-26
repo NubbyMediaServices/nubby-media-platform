@@ -1,49 +1,44 @@
 package com.nubbymedia.scmsp.service;
 
-import com.nubbymedia.scmsp.config.StorageProperties;
 import com.nubbymedia.scmsp.exception.BadRequestException;
 import com.nubbymedia.scmsp.exception.ResourceNotFoundException;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
-
-import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 @Service
 @RequiredArgsConstructor
 public class LocalFileStorageService implements FileStorageService {
 
-    private final StorageProperties storageProperties;
-    private Path rootLocation;
+    private final S3Client s3Client;
 
-    @PostConstruct
-    void init() {
-        this.rootLocation = Paths.get(storageProperties.rootLocation()).toAbsolutePath().normalize();
-        try {
-            Files.createDirectories(this.rootLocation);
-        } catch (Exception ex) {
-            throw new IllegalStateException("Failed to initialize storage directory", ex);
-        }
-    }
+    @Value("${aws.s3.bucket.private}")
+    private String privateBucket;
 
     @Override
     public Resource loadAsResource(String relativePath) {
         try {
-            Path resolved = rootLocation.resolve(normalizeRelativePath(relativePath)).normalize();
-            if (!resolved.startsWith(rootLocation)) {
-                throw new BadRequestException("Invalid storage path");
-            }
-            if (!Files.exists(resolved)) {
-                throw new ResourceNotFoundException("Stored file not found on disk");
-            }
-            return new UrlResource(resolved.toUri());
-        } catch (MalformedURLException ex) {
-            throw new ResourceNotFoundException("Stored file not found on disk");
+            String key = normalizeRelativePath(relativePath);
+
+            GetObjectRequest request = GetObjectRequest.builder()
+                    .bucket(privateBucket)
+                    .key(key)
+                    .build();
+
+            ResponseBytes<?> objectBytes = s3Client.getObjectAsBytes(request);
+
+            return new ByteArrayResource(objectBytes.asByteArray());
+
+        } catch (NoSuchKeyException e) {
+            throw new ResourceNotFoundException("File not found in S3");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load file from S3", e);
         }
     }
 
@@ -52,10 +47,13 @@ public class LocalFileStorageService implements FileStorageService {
         if (path == null || path.isBlank()) {
             throw new BadRequestException("Storage path is required");
         }
+
         String normalized = path.replace("\\", "/").trim();
+
         if (normalized.startsWith("/") || normalized.contains("..")) {
             throw new BadRequestException("Storage path must be relative and safe");
         }
+
         return normalized;
     }
 }

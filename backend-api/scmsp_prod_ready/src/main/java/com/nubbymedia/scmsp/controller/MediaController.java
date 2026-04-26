@@ -4,6 +4,7 @@ import com.nubbymedia.scmsp.dto.*;
 import com.nubbymedia.scmsp.entity.MediaFile;
 import com.nubbymedia.scmsp.service.FileStorageService;
 import com.nubbymedia.scmsp.service.MediaService;
+import com.nubbymedia.scmsp.service.S3FileStorageService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -16,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -28,6 +30,7 @@ public class MediaController {
 
     private final MediaService mediaService;
     private final FileStorageService fileStorageService;
+    private final S3FileStorageService s3FileStorageService;
 
     @GetMapping
     public List<MediaFileResponse> getAccessibleFiles(Authentication authentication) {
@@ -38,6 +41,31 @@ public class MediaController {
     public MediaFileResponse create(@Valid @RequestBody CreateMediaFileRequest request,
                                     Authentication authentication,
                                     HttpServletRequest httpRequest) {
+        return mediaService.create(request, authentication.getName(), clientIp(httpRequest), userAgent(httpRequest));
+    }
+
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public MediaFileResponse upload(@RequestParam("file") MultipartFile file,
+                                    @RequestParam("folderId") Long folderId,
+                                    @RequestParam(value = "description", required = false) String description,
+                                    Authentication authentication,
+                                    HttpServletRequest httpRequest) throws Exception {
+
+        String key = s3FileStorageService.uploadPrivateFile(file, authentication.getName());
+
+        CreateMediaFileRequest request = new CreateMediaFileRequest(
+                folderId,
+                file.getOriginalFilename(),
+                file.getContentType() != null ? file.getContentType() : MediaType.APPLICATION_OCTET_STREAM_VALUE,
+                Math.max(0.01, file.getSize() / 1024.0 / 1024.0),
+                key,
+                null,
+                key,
+                true,
+                "Private",
+                description
+        );
+
         return mediaService.create(request, authentication.getName(), clientIp(httpRequest), userAgent(httpRequest));
     }
 
